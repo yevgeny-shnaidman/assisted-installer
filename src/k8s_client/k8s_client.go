@@ -132,7 +132,7 @@ func (c k8sClient) ApproveCsr(csr *v1beta1.CertificateSigningRequest) error {
 		Message:        "This CSR was approved by the assisted-installer-controller",
 		LastUpdateTime: metav1.Now(),
 	})
-	if _, err := c.csrClient.UpdateApproval(csr); err != nil {
+	if _, err := c.csrClient.UpdateApproval(context.TODO(), csr, metav1.UpdateOptions{}); err != nil {
 		c.log.Errorf("Failed to approve csr %v, err %e", csr, err)
 		return err
 	}
