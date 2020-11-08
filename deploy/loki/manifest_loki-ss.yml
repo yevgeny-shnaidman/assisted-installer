@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: loki
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: storage
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/part-of: loki
+  serviceName: loki
+  template:
+    metadata:
+      annotations:
+        checksum/config: 55afb5b69f885f3b5401e2dc407a800cb71f9521ff62a07630e2f8473c101116
+      labels:
+        app.kubernetes.io/component: storage
+        app.kubernetes.io/instance: loki
+        app.kubernetes.io/name: loki
+        app.kubernetes.io/part-of: loki
+        app.kubernetes.io/version: 1.6.1
+    spec:
+      containers:
+      - args:
+        - "-config.file=/etc/loki/loki.yaml"
+        image: grafana/loki:1.6.1
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: "/ready"
+            port: http-metrics
+          initialDelaySeconds: 45
+        name: loki
+        ports:
+        - containerPort: 3100
+          name: http-metrics
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: "/ready"
+            port: http-metrics
+          initialDelaySeconds: 45
+        securityContext:
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: "/etc/loki"
+          name: config
+        - mountPath: "/data"
+          name: storage
+      serviceAccountName: loki
+      terminationGracePeriodSeconds: 4800
+      volumes:
+      - name: config
+        secret:
+          secretName: loki
+      - emptyDir: {}
+        name: storage
+  updateStrategy:
+    type: RollingUpdate

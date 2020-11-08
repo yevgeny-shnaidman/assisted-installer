@@ -130,9 +130,15 @@ func (i *installer) InstallNode() error {
 		}
 	}
 	i.UpdateHostInstallProgress(models.HostStageRebooting, "")
+	i.log.Infof("YEV - before UploadInstallationLogs")
 	_, err = i.ops.UploadInstallationLogs(isBootstrap)
 	if err != nil {
 		i.log.Errorf("upload installation logs %s", err)
+	} else {
+		i.log.Infof("YEV - UploadInstallationLog success")
+	}
+	if isBootstrap {
+		time.Sleep(10 * time.Minute)
 	}
 	if err = i.ops.Reboot(); err != nil {
 		return err
@@ -197,6 +203,11 @@ func (i *installer) startBootstrap() error {
 	}
 
 	if err = i.ops.PrepareController(); err != nil {
+		i.log.Error(err)
+		return err
+	}
+
+	if err = i.ops.PrepareLoki(); err != nil {
 		i.log.Error(err)
 		return err
 	}

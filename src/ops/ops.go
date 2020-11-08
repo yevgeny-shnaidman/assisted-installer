@@ -33,6 +33,7 @@ type Ops interface {
 	SetFileInIgnition(ignitionPath, filePath, contents string, mode int) error
 	SystemctlAction(action string, args ...string) error
 	PrepareController() error
+	PrepareLoki() error
 	GetVGByPV(pvName string) (string, error)
 	RemoveVG(vgName string) error
 	RemoveLV(lvName, vgName string) error
@@ -44,6 +45,7 @@ type Ops interface {
 
 const (
 	controllerDeployFolder         = "/assisted-installer-controller/deploy"
+	lokiDeployFolder               = "/loki/deploy"
 	manifestsFolder                = "/opt/openshift/manifests"
 	renderedControllerCm           = "assisted-installer-controller-cm.yaml"
 	controllerDeployCmTemplate     = "assisted-installer-controller-cm.yaml.template"
@@ -243,6 +245,23 @@ func (o *ops) PrepareController() error {
 	return nil
 }
 
+func (o *ops) PrepareLoki() error {
+	// Copy deploy files to manifestsFolder
+	files, err := utils.GetListOfFilesFromFolder(lokiDeployFolder, "*.yml")
+	if err != nil {
+		o.log.Errorf("Error occurred while trying to get list of files from %s : %e", lokiDeployFolder, err)
+		return err
+	}
+	for _, file := range files {
+		err := utils.CopyFile(file, filepath.Join(manifestsFolder, filepath.Base(file)))
+		if err != nil {
+			o.log.Errorf("Failed to copy %s to %s. error :%e", file, manifestsFolder, err)
+			return err
+		}
+	}
+	return nil
+}
+
 func (o *ops) renderControllerCm() error {
 	var params = map[string]interface{}{
 		"InventoryUrl":         config.GlobalConfig.URL,
@@ -377,16 +396,21 @@ func (o *ops) GetMCSLogs() (string, error) {
 func (o *ops) UploadInstallationLogs(isBootstrap bool) (string, error) {
 	command := "podman"
 	args := []string{"run", "--rm", "--privileged", "-v", "/run/systemd/journal/socket:/run/systemd/journal/socket",
-		"-v", "/var/log:/var/log", config.GlobalConfig.AgentImage, "logs_sender",
+		"-v", "/var/log:/var/log", "--pid=host", config.GlobalConfig.AgentImage, "logs_sender",
 		"-cluster-id", config.GlobalConfig.ClusterID, "-url", config.GlobalConfig.URL,
 		"-host-id", config.GlobalConfig.HostID,
 		"-pull-secret-token", config.GlobalConfig.PullSecretToken,
 		fmt.Sprintf("-insecure=%s", strconv.FormatBool(config.GlobalConfig.SkipCertVerification)),
 		fmt.Sprintf("-bootstrap=%s", strconv.FormatBool(isBootstrap)),
+		"-with-installer-gather-logging=true",
 	}
 
 	if config.GlobalConfig.CACertPath != "" {
 		args = append(args, fmt.Sprintf("-cacert=%s", config.GlobalConfig.CACertPath))
+	}
+	o.log.Infof("YEV - start print args for for upload log podman command")
+	for i, arg := range args {
+		o.log.Infof("arg[%d]: <%s>", i, arg)
 	}
 	return o.ExecPrivilegeCommand(o.logWriter, command, args...)
 }

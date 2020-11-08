@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: loki-promtail
+  namespace: loki
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: log-collector
+      app.kubernetes.io/instance: loki-promtail
+      app.kubernetes.io/name: promtail
+      app.kubernetes.io/part-of: loki
+  template:
+    metadata:
+      annotations:
+        checksum/config: 72932794b92cf3e3b0f6c057ac848227
+      labels:
+        app.kubernetes.io/component: log-collector
+        app.kubernetes.io/instance: loki-promtail
+        app.kubernetes.io/name: promtail
+        app.kubernetes.io/part-of: loki
+        app.kubernetes.io/version: 1.6.1
+    spec:
+      containers:
+      - args:
+        - "-config.file=/etc/promtail/promtail.yaml"
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        image: grafana/promtail:1.6.1
+        imagePullPolicy: IfNotPresent
+        name: promtail
+        ports:
+        - containerPort: 3101
+          name: http-metrics
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: "/ready"
+            port: http-metrics
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        securityContext:
+          privileged: true
+          readOnlyRootFilesystem: true
+          runAsGroup: 0
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: "/etc/promtail"
+          name: config
+        - mountPath: "/run/promtail"
+          name: run
+        - mountPath: "/var/lib/docker/containers"
+          name: docker
+          readOnly: true
+        - mountPath: "/var/log/pods"
+          name: pods
+          readOnly: true
+      initContainers:
+      - command:
+        - sh
+        - "-c"
+        - while [[ "$(curl -s -o /dev/null -w '%{http_code}' http://loki-1.loki:3100/ready)"
+          != "200" ]]; do sleep 5s; done
+        image: curlimages/curl:7.69.1
+        name: waitforloki
+      serviceAccountName: loki-promtail
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      volumes:
+      - configMap:
+          name: loki-promtail
+        name: config
+      - hostPath:
+          path: "/run/promtail"
+        name: run
+      - hostPath:
+          path: "/var/lib/docker/containers"
+        name: docker
+      - hostPath:
+          path: "/var/log/pods"
+        name: pods
+  updateStrategy:
+    type: RollingUpdate

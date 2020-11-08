@@ -178,6 +178,20 @@ func (mr *MockOpsMockRecorder) PrepareController() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareController", reflect.TypeOf((*MockOps)(nil).PrepareController))
 }
 
+// PrepareLoki mocks base method
+func (m *MockOps) PrepareLoki() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PrepareLoki")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PrepareLoki indicates an expected call of PrepareLoki
+func (mr *MockOpsMockRecorder) PrepareLoki() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareLoki", reflect.TypeOf((*MockOps)(nil).PrepareLoki))
+}
+
 // GetVGByPV mocks base method
 func (m *MockOps) GetVGByPV(pvName string) (string, error) {
 	m.ctrl.T.Helper()

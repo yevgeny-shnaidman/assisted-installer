@@ -2,6 +2,7 @@ CONTAINER_COMMAND = $(shell if [ -x "$(shell which docker)" ];then echo "docker"
 INSTALLER := $(or ${INSTALLER},quay.io/ocpmetal/assisted-installer:stable)
 GIT_REVISION := $(shell git rev-parse HEAD)
 CONTROLLER :=  $(or ${CONTROLLER}, quay.io/ocpmetal/assisted-installer-controller:stable)
+CHECK_DATA := $(or ${CHECK_DATA}, quay.io/yshnaidm/check-data:latest)
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 REPORTS = $(ROOT_DIR)/reports
 TEST_PUBLISH_FLAGS = --junitfile-testsuite-name=relative --junitfile-testcase-classname=relative --junitfile $(REPORTS)/unittest.xml
@@ -30,6 +31,10 @@ build/controller: lint format
 	mkdir -p build
 	CGO_ENABLED=0 go build -o build/assisted-installer-controller src/main/assisted-installer-controller/assisted_installer_main.go
 
+build/check_data: lint format
+	mkdir -p build
+	CGO_ENABLED=0 go build -o build/check_data src/main/check_data/check_data_main.go
+
 image: build/installer
 	GIT_REVISION=${GIT_REVISION} $(CONTAINER_COMMAND) build --build-arg GIT_REVISION -f Dockerfile.assisted-installer . -t $(INSTALLER)
 
@@ -38,6 +43,9 @@ push: image
 
 image_controller: build/controller
 	GIT_REVISION=${GIT_REVISION} $(CONTAINER_COMMAND) build --build-arg GIT_REVISION -f Dockerfile.assisted-installer-controller . -t $(CONTROLLER)
+
+image_check_data: build/check_data
+	docker build  -f Dockerfile.check-data . -t $(CHECK_DATA)
 
 push_controller: image_controller
 	$(CONTAINER_COMMAND) push $(CONTROLLER)
