@@ -86,7 +86,7 @@ func (status *ControllerStatus) HasError() bool {
 
 func (c *controller) WaitAndUpdateNodesStatus(status *ControllerStatus) {
 	c.log.Infof("Waiting till all nodes will join and update status to assisted installer")
-	ignoreStatuses := []string{models.HostStatusDisabled, models.HostStatusInstalled}
+	ignoreStatuses := []string{models.HostStatusDisabled, models.HostStatusInstalled, models.HostStatusInstalling}
 	var hostsInError int
 	for {
 		time.Sleep(GeneralWaitInterval)

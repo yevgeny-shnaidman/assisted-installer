@@ -2,7 +2,7 @@ CONTAINER_COMMAND = $(shell if [ -x "$(shell which docker)" ];then echo "docker"
 INSTALLER := $(or ${INSTALLER},quay.io/ocpmetal/assisted-installer:stable)
 GIT_REVISION := $(shell git rev-parse HEAD)
 CONTROLLER :=  $(or ${CONTROLLER}, quay.io/ocpmetal/assisted-installer-controller:stable)
-CONTROLLER_OCP :=  $(or ${CONTROLLER_OCP}, quay.io/ocpmetal/assisted-installer-controller-ocp:latest)
+CONTROLLER_OCP :=  $(or ${CONTROLLER_OCP}, quay.io/yshnaidm/assisted-installer-controller-ocp:latest)
 ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 REPORTS = $(ROOT_DIR)/reports
 TEST_PUBLISH_FLAGS = --junitfile-testsuite-name=relative --junitfile-testcase-classname=relative --junitfile $(REPORTS)/unittest.xml
