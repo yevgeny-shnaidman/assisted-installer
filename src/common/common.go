@@ -30,7 +30,13 @@ func FilterHostsByStatus(hosts map[string]inventory_client.HostData, status []st
 
 func SetConfiguringStatusForHosts(client inventory_client.InventoryClient, inventoryHostsMapWithIp map[string]inventory_client.HostData,
 	mcsLogs string, fromBootstrap bool, log *logrus.Logger) {
-	notValidStates := map[models.HostStage]struct{}{models.HostStageConfiguring: {}, models.HostStageJoined: {}, models.HostStageDone: {}}
+	notValidStates := map[models.HostStage]struct{}{
+		models.HostStageStartingInstallation: {},
+		models.HostStageInstalling:           {},
+		models.HostStageWritingImageToDisk:   {},
+		models.HostStageConfiguring:          {},
+		models.HostStageJoined:               {},
+		models.HostStageDone:                 {}}
 	if fromBootstrap {
 		notValidStates[models.HostStageWaitingForIgnition] = struct{}{}
 	}

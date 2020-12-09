@@ -230,6 +230,7 @@ func (c *inventoryClient) GetHosts(ctx context.Context, log logrus.FieldLogger, 
 		return nil, err
 	}
 	for _, hostData := range hosts {
+		log.Infof("foudn hosts with status %s", hostData.Host.Status)
 		hostname := strings.ToLower(hostData.Host.RequestedHostname)
 		ips, err := utils.GetHostIpsFromInventory(hostData.Inventory)
 		if err != nil {
